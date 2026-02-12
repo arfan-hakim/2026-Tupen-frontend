@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Peminjaman - Tupen</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">Tupen<span>.</span></h1>
+            <ul class="nav-links">
+                <li><a href="index.html">Daftar Ruangan</a></li>
+                <li><a href="peminjaman.html" class="active">Peminjaman Saya</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="form-section">
+            <header class="page-header">
+                <h2>Form Peminjaman Ruangan</h2>
+                <p>Silakan isi detail peminjaman di bawah ini.</p>
+            </header>
+
+            <form id="booking-form" class="card-form">
+                <div class="form-group">
+                    <label for="roomId">Pilih Ruangan</label>
+                    <select id="roomId" name="roomId" required>
+                        <option value="">-- Pilih Ruangan --</option>
+                        </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startTime">Waktu Mulai</label>
+                        <input type="datetime-local" id="startTime" name="startTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="endTime">Waktu Selesai</label>
+                        <input type="datetime-local" id="endTime" name="endTime" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="purpose">Tujuan Peminjaman</label>
+                    <textarea id="purpose" name="purpose" rows="4" placeholder="Contoh: Rapat Koordinasi Organisasi" required></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Ajukan Peminjaman</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Tupen Backend Project. Built with .NET & Pure CSS.</p>
+    </footer>
+</body>
+</html>
