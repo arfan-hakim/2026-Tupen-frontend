@@ -51,6 +51,41 @@
                 <button type="submit" class="btn-submit">Ajukan Peminjaman</button>
             </form>
         </section>
+        <section class="history-section">
+            <header class="page-header">
+                <h3>Riwayat Peminjaman Saya</h3>
+            </header>
+
+            <div class="table-container">
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Ruangan</th>
+                            <th>Waktu Mulai</th>
+                            <th>Waktu Selesai</th>
+                            <th>Tujuan</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="booking-history-body">
+                        <tr>
+                            <td>Lab Komputer A.101</td>
+                            <td>12 Feb 2026, 08:00</td>
+                            <td>12 Feb 2026, 10:00</td>
+                            <td>Rapat Kelas</td>
+                            <td><span class="status-badge pending">Pending</span></td>
+                        </tr>
+                        <tr>
+                            <td>Ruang Kelas B.202</td>
+                            <td>13 Feb 2026, 13:00</td>
+                            <td>13 Feb 2026, 15:00</td>
+                            <td>Seminar UKM</td>
+                            <td><span class="status-badge approved">Approved</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 
     <footer>
