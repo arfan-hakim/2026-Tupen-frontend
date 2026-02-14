@@ -42,5 +42,42 @@
     <footer>
         <p>&copy; 2026 Tupen Backend Project. Built with .NET & Pure CSS.</p>
     </footer>
+
+    <script>
+    const API_URL = 'http://localhost:5145/api'; // Sesuaikan port backend kamu
+
+    async function loadRooms() {
+        try {
+            const response = await fetch(`${API_URL}/Rooms`);
+            const rooms = await response.json();
+            
+            const container = document.getElementById('room-list');
+            container.innerHTML = ''; // Hapus blueprint/loading
+
+            rooms.forEach(room => {
+                container.innerHTML += `
+                    <div class="room-card">
+                        <div class="room-badge">Tersedia</div>
+                        <div class="room-info">
+                            <h3>${room.name}</h3>
+                            <p class="room-meta">${room.roomNumber}</p>
+                            <div class="room-details">
+                                <span><strong>Kapasitas:</strong> ${room.capacity} Orang</span>
+                            </div>
+                            <button class="btn-book" onclick="location.href='peminjaman.html?roomId=${room.id}'">
+                                Pesan Sekarang
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            console.error('Gagal mengambil data ruangan:', error);
+        }
+    }
+
+    // Jalankan fungsi saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', loadRooms);
+</script>
 </body>
 </html>
