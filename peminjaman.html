@@ -68,20 +68,7 @@
                         </tr>
                     </thead>
                     <tbody id="booking-history-body">
-                        <tr>
-                            <td>Lab Komputer A.101</td>
-                            <td>12 Feb 2026, 08:00</td>
-                            <td>12 Feb 2026, 10:00</td>
-                            <td>Rapat Kelas</td>
-                            <td><span class="status-badge pending">Pending</span></td>
-                        </tr>
-                        <tr>
-                            <td>Ruang Kelas B.202</td>
-                            <td>13 Feb 2026, 13:00</td>
-                            <td>13 Feb 2026, 15:00</td>
-                            <td>Seminar UKM</td>
-                            <td><span class="status-badge approved">Approved</span></td>
-                        </tr>
+                        
                     </tbody>
                 </table>
             </div>
@@ -145,23 +132,65 @@
 
     // 4. Load Riwayat Peminjaman (GET)
     async function loadBookingHistory() {
-        const response = await fetch(`${API_URL}/Bookings`);
-        const bookings = await response.json();
-        const tbody = document.getElementById('booking-history-body');
-        tbody.innerHTML = '';
+    const response = await fetch(`${API_URL}/Bookings`);
+    const bookings = await response.json();
+    
+    // BARIS PENTING: Cek terminal browser (F12 -> Console)
+    console.log("Data Booking pertama dari API:", bookings[0]); 
 
-        bookings.forEach(b => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${b.roomName}</td>
-                    <td>${new Date(b.startTime).toLocaleString()}</td>
-                    <td>${new Date(b.endTime).toLocaleString()}</td>
-                    <td>${b.purpose}</td>
-                    <td><span class="status-badge ${b.status.toLowerCase()}">${b.status}</span></td>
-                </tr>
+    const tbody = document.getElementById('booking-history-body');
+    tbody.innerHTML = '';
+
+    bookings.forEach(b => {
+        let actionButtons = '';
+        if (b.status === 'Pending') {
+            actionButtons = `
+                <div class="admin-actions">
+                    <button class="btn-approve" onclick="updateStatus(${b.id}, 'Approved')">Approve</button>
+                    <button class="btn-reject" onclick="updateStatus(${b.id}, 'Rejected')">Reject</button>
+                </div>
             `;
+        }
+
+        // Gunakan pengecekan multi-properti untuk memastikan data tampil
+        const tujuanTampil = b.purpose || b.Purpose || b.bookingPurpose || "Tanpa Tujuan";
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${b.roomName}</td>
+                <td>${new Date(b.startTime).toLocaleString()}</td>
+                <td>${new Date(b.endTime).toLocaleString()}</td>
+                <td>${tujuanTampil}</td>
+                <td>
+                    <span class="status-badge ${b.status.toLowerCase()}">${b.status}</span>
+                    ${actionButtons}
+                </td>
+            </tr>
+        `;
+    });
+}
+
+// Fungsi baru untuk mengirim PATCH request ke Backend
+async function updateStatus(id, newStatus) {
+    if (!confirm(`Apakah Anda yakin ingin mengubah status menjadi ${newStatus}?`)) return;
+
+    try {
+        const response = await fetch(`${API_URL}/Bookings/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newStatus) // Backend mengharapkan string status
         });
+
+        if (response.ok) {
+            alert(`Berhasil memperbarui status menjadi ${newStatus}`);
+            loadBookingHistory(); // Refresh tabel
+        } else {
+            alert('Gagal memperbarui status');
+        }
+    } catch (error) {
+        console.error('Error:', error);
     }
+}
 
     document.addEventListener('DOMContentLoaded', initPage);
 </script>
