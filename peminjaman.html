@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Form Peminjaman - Tupen</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Styling untuk tata letak tombol */
+        .status-container { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+        .action-cell { display: flex; gap: 8px; }
+        
+        .btn-edit { background-color: #f39c12; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.75rem; }
+        .btn-delete { background-color: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.75rem; }
+        .btn-edit:hover { background-color: #d68910; }
+        .btn-delete:hover { background-color: #c0392b; }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
+        .modal-content { background: white; margin: 10% auto; padding: 25px; width: 90%; max-width: 500px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-header { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .modal-footer { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-cancel { background: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -29,7 +46,7 @@
                     <label for="roomId">Pilih Ruangan</label>
                     <select id="roomId" name="roomId" required>
                         <option value="">-- Pilih Ruangan --</option>
-                        </select>
+                    </select>
                 </div>
 
                 <div class="form-row">
@@ -51,6 +68,7 @@
                 <button type="submit" class="btn-submit">Ajukan Peminjaman</button>
             </form>
         </section>
+
         <section class="history-section">
             <header class="page-header">
                 <h3>Riwayat Peminjaman Saya</h3>
@@ -65,35 +83,56 @@
                             <th>Waktu Selesai</th>
                             <th>Tujuan</th>
                             <th>Status</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="booking-history-body">
-                        
-                    </tbody>
+                    <tbody id="booking-history-body"></tbody>
                 </table>
             </div>
         </section>
     </main>
 
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Peminjaman</h3>
+                <p style="font-size: 0.8rem; color: #666;">Status akan otomatis kembali ke Pending.</p>
+            </div>
+            <input type="hidden" id="editId">
+            <div class="form-group">
+                <label for="editStartTime">Waktu Mulai</label>
+                <input type="datetime-local" id="editStartTime">
+            </div>
+            <div class="form-group">
+                <label for="editEndTime">Waktu Selesai</label>
+                <input type="datetime-local" id="editEndTime">
+            </div>
+            <div class="form-group">
+                <label for="editPurpose">Tujuan Peminjaman</label>
+                <textarea id="editPurpose" rows="3"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal()" class="btn-cancel">Batal</button>
+                <button onclick="saveEdit()" class="btn-submit">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+
     <footer>
         <p>&copy; 2026 Tupen Backend Project. Built with .NET & Pure CSS.</p>
     </footer>
 
-    <script>
+<script>
     const API_URL = 'http://localhost:5145/api';
-
-    // 1. Ambil RoomId dari URL (jika ada)
-    const urlParams = new URLSearchParams(window.location.search);
-    const selectedRoomId = urlParams.get('roomId');
 
     async function initPage() {
         await loadRoomOptions();
         await loadBookingHistory();
-        
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedRoomId = urlParams.get('roomId');
         if(selectedRoomId) document.getElementById('roomId').value = selectedRoomId;
     }
 
-    // 2. Load Daftar Ruangan ke Select Option
     async function loadRoomOptions() {
         const response = await fetch(`${API_URL}/Rooms`);
         const rooms = await response.json();
@@ -103,12 +142,10 @@
         });
     }
 
-    // 3. Handle Submit Form (POST)
     document.getElementById('booking-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
         const bookingData = {
-            userId: 1, // Sementara hardcoded untuk testing
+            userId: 1, 
             roomId: parseInt(document.getElementById('roomId').value),
             startTime: document.getElementById('startTime').value,
             endTime: document.getElementById('endTime').value,
@@ -124,73 +161,110 @@
         if (response.ok) {
             alert('Peminjaman berhasil diajukan!');
             location.reload();
-        } else {
-            const err = await response.json();
-            alert(err.message || 'Terjadi kesalahan (Cek bentrok jadwal)');
         }
     });
 
-    // 4. Load Riwayat Peminjaman (GET)
     async function loadBookingHistory() {
-    const response = await fetch(`${API_URL}/Bookings`);
-    const bookings = await response.json();
-    
-    // BARIS PENTING: Cek terminal browser (F12 -> Console)
-    console.log("Data Booking pertama dari API:", bookings[0]); 
+        const response = await fetch(`${API_URL}/Bookings`);
+        const bookings = await response.json();
+        const tbody = document.getElementById('booking-history-body');
+        tbody.innerHTML = '';
 
-    const tbody = document.getElementById('booking-history-body');
-    tbody.innerHTML = '';
+        bookings.forEach(b => {
+            // Logika Tombol Admin tetap di kolom Status
+            let adminHtml = '';
+            if (b.status === 'Pending') {
+                adminHtml = `
+                    <div style="margin-top: 8px; display: flex; gap: 5px;">
+                        <button class="btn-approve" onclick="updateStatus(${b.id}, 'Approved')">Approve</button>
+                        <button class="btn-reject" onclick="updateStatus(${b.id}, 'Rejected')">Reject</button>
+                    </div>
+                `;
+            }
 
-    bookings.forEach(b => {
-        let actionButtons = '';
-        if (b.status === 'Pending') {
-            actionButtons = `
-                <div class="admin-actions">
-                    <button class="btn-approve" onclick="updateStatus(${b.id}, 'Approved')">Approve</button>
-                    <button class="btn-reject" onclick="updateStatus(${b.id}, 'Rejected')">Reject</button>
-                </div>
+            tbody.innerHTML += `
+                <tr>
+                    <td>${b.roomName}</td>
+                    <td>${new Date(b.startTime).toLocaleString('id-ID')}</td>
+                    <td>${new Date(b.endTime).toLocaleString('id-ID')}</td>
+                    <td>${b.purpose || "Tanpa Tujuan"}</td>
+                    <td>
+                        <div class="status-container">
+                            <span class="status-badge ${b.status.toLowerCase()}">${b.status}</span>
+                            ${adminHtml}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="action-cell">
+                            <button class="btn-edit" onclick='openEditModal(${JSON.stringify(b)})'>Edit</button>
+                            <button class="btn-delete" onclick="deleteBooking(${b.id})">Hapus</button>
+                        </div>
+                    </td>
+                </tr>
             `;
-        }
+        });
+    }
 
-        // Gunakan pengecekan multi-properti untuk memastikan data tampil
-        const tujuanTampil = b.purpose || b.Purpose || b.bookingPurpose || "Tanpa Tujuan";
-
-        tbody.innerHTML += `
-            <tr>
-                <td>${b.roomName}</td>
-                <td>${new Date(b.startTime).toLocaleString()}</td>
-                <td>${new Date(b.endTime).toLocaleString()}</td>
-                <td>${tujuanTampil}</td>
-                <td>
-                    <span class="status-badge ${b.status.toLowerCase()}">${b.status}</span>
-                    ${actionButtons}
-                </td>
-            </tr>
-        `;
-    });
-}
-
-// Fungsi baru untuk mengirim PATCH request ke Backend
-async function updateStatus(id, newStatus) {
-    if (!confirm(`Apakah Anda yakin ingin mengubah status menjadi ${newStatus}?`)) return;
-
-    try {
+    async function updateStatus(id, newStatus) {
+        if (!confirm(`Ubah status menjadi ${newStatus}?`)) return;
         const response = await fetch(`${API_URL}/Bookings/${id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newStatus) // Backend mengharapkan string status
+            body: JSON.stringify(newStatus)
+        });
+        if (response.ok) loadBookingHistory();
+    }
+
+    async function deleteBooking(id) {
+        if (!confirm("Hapus riwayat peminjaman ini?")) return;
+        const response = await fetch(`${API_URL}/Bookings/${id}`, { method: 'DELETE' });
+        if (response.ok) { alert("Berhasil dihapus."); loadBookingHistory(); }
+    }
+
+    function openEditModal(booking) {
+        document.getElementById('editId').value = booking.id;
+        document.getElementById('editPurpose').value = booking.purpose || "";
+        
+        // Formatting datetime-local
+        const start = new Date(booking.startTime);
+        start.setMinutes(start.getMinutes() - start.getTimezoneOffset());
+        document.getElementById('editStartTime').value = start.toISOString().slice(0, 16);
+        
+        const end = new Date(booking.endTime);
+        end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
+        document.getElementById('editEndTime').value = end.toISOString().slice(0, 16);
+        
+        document.getElementById('editModal').style.display = 'block';
+    }
+
+    function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+
+    async function saveEdit() {
+        const id = document.getElementById('editId').value;
+        const updatedData = {
+            roomId: 0,
+            startTime: document.getElementById('editStartTime').value,
+            endTime: document.getElementById('editEndTime').value,
+            purpose: document.getElementById('editPurpose').value
+        };
+
+        const putRes = await fetch(`${API_URL}/Bookings/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
         });
 
-        if (response.ok) {
-            alert(`Berhasil memperbarui status menjadi ${newStatus}`);
-            loadBookingHistory(); // Refresh tabel
-        } else {
-            alert('Gagal memperbarui status');
+        if (putRes.ok) {
+            await fetch(`${API_URL}/Bookings/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify("Pending")
+            });
+            alert("Perubahan disimpan. Status kembali ke Pending.");
+            closeModal();
+            loadBookingHistory();
         }
-    } catch (error) {
-        console.error('Error:', error);
     }
-}
 
     document.addEventListener('DOMContentLoaded', initPage);
 </script>
